@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI in Action</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Let’s see how AI works in action</h1>
+
+    <p>
+      AI has many uses. Let’s try one of the simplest and most common ones:
+      <strong>sentiment analysis</strong>.
+    </p>
+
+    <p>
+      This AI will guess whether your text sounds
+      <strong>positive</strong>, <strong>negative</strong>, or <strong>neutral</strong>.
+    </p>
+
+    <textarea id="userInput" placeholder="Type a sentence here..."></textarea>
+
+    <button id="analyzeBtn">Ask the AI</button>
+
+    <div id="steps" class="hidden">
+      <h2>What just happened?</h2>
+
+      <p><strong>Step 1:</strong> Your text was broken into smaller pieces.</p>
+      <p><strong>Step 2:</strong> The AI compared patterns it learned during training.</p>
+      <p><strong>Step 3:</strong> It guessed the most likely sentiment.</p>
+    </div>
+
+    <p id="result"></p>
+  </div>
+
+  <script src="page5.js" defer></script>
+</body>
+</html>
