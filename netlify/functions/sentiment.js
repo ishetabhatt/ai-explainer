@@ -1,32 +1,50 @@
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function handler(event) {
   try {
     const { text } = JSON.parse(event.body);
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "user", content: text }
-      ],
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Classify the sentiment of the text as exactly one word: Positive, Neutral, or Negative.",
+          },
+          {
+            role: "user",
+            content: text,
+          },
+        ],
+        temperature: 0,
+      }),
     });
 
-    // 🔴 DEBUG: return the RAW response
+    const data = await response.json();
+
+    const sentiment =
+      data?.choices?.[0]?.message?.content?.trim() ?? "Unknown";
+
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        raw: completion,
-      }),
+      body: JSON.stringify({ sentiment }),
     };
-  } catch (err) {
+  } catch (error) {
+    console.error("Sentiment error:", error);
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sentiment: "Error",
+        error: error.message,
+      }),
     };
   }
 }

@@ -24,7 +24,10 @@ analyzeBtn.addEventListener("click", async () => {
 });
 
 
+
     const data = await response.json();
+console.log("API response:", data);
+
 
     result.textContent = `Sentiment guessed by AI: ${data.sentiment}`;
     steps.classList.remove("hidden");
