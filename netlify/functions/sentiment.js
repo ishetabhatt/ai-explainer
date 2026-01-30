@@ -1,4 +1,7 @@
-export async function handler(event) {
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
+module.exports.handler = async function (event) {
   try {
     const { text } = JSON.parse(event.body);
 
@@ -16,16 +19,17 @@ export async function handler(event) {
 
     const data = await response.json();
 
-    // 🔴 Return EVERYTHING so we can see it
+    // TEMP: return raw response so we can see it
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        RAW_RESPONSE: data,
-      }),
+      body: JSON.stringify({ RAW_RESPONSE: data }),
     };
 
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.m
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+};
