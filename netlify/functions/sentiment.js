@@ -10,31 +10,24 @@ export async function handler(event) {
       },
       body: JSON.stringify({
         model: "gpt-4.1-mini",
-        input: `Classify the sentiment of this text as exactly one word: Positive, Neutral, or Negative.\n\nText: "${text}"`,
-        temperature: 0,
+        input: text,
       }),
     });
 
     const data = await response.json();
 
-    // ✅ THIS is the correct field
-    const sentiment = data.output_text?.trim() || "Unknown";
-
+    // 🔴 RETURN EVERYTHING so we can see it
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sentiment }),
+      body: JSON.stringify({
+        FULL_RESPONSE: data,
+      }),
     };
   } catch (error) {
-    console.error("Sentiment error:", error);
-
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sentiment: "Error",
-        error: error.message,
-      }),
+      body: JSON.stringify({ error: error.message }),
     };
   }
 }
