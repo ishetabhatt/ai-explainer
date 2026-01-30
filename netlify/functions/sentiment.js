@@ -11,43 +11,22 @@ export async function handler(event) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "system",
-          content:
-            "Classify the sentiment of the user's text as exactly one of these words: Positive, Neutral, or Negative. Respond with only that one word.",
-        },
-        {
-          role: "user",
-          content: text,
-        },
+        { role: "user", content: text }
       ],
-      temperature: 0,
     });
 
-    const sentiment =
-      completion.choices?.[0]?.message?.content?.trim();
-
+    // 🔴 DEBUG: return the RAW response
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sentiment: sentiment || "Unknown",
+        raw: completion,
       }),
     };
-  } catch (error) {
-    console.error("Sentiment function error:", error);
-
+  } catch (err) {
     return {
       statusCode: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sentiment: "Error",
-        error: error.message,
-      }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
 }
