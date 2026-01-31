@@ -1,54 +1,57 @@
-module.exports.handler = async function (event) {
+const Sentiment = require('sentiment');
+
+exports.handler = async (event) => {
+  // Handle CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
   try {
     const { text } = JSON.parse(event.body);
 
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: text }),
-      }
-    );
-
-    const data = await response.json();
-
-    // Hugging Face can return:
-    // 1) [{ label: "POSITIVE", score: 0.99 }]
-    // 2) [[{ label: "POSITIVE", score: 0.99 }]]
-    // 3) { error: "...", estimated_time: ... }
-
-    let label;
-
-    if (Array.isArray(data)) {
-      if (Array.isArray(data[0])) {
-        label = data[0][0]?.label;
-      } else {
-        label = data[0]?.label;
-      }
+    if (!text) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ sentiment: 'Error', error: 'No text provided' })
+      };
     }
 
-    let sentiment = "Unknown";
-    if (label === "POSITIVE") sentiment = "Positive";
-    if (label === "NEGATIVE") sentiment = "Negative";
+    // Run sentiment analysis
+    const sentiment = new Sentiment();
+    const result = sentiment.analyze(text);
+
+    // Determine sentiment based on score
+    let sentimentLabel;
+    if (result.score > 0) {
+      sentimentLabel = 'Positive';
+    } else if (result.score < 0) {
+      sentimentLabel = 'Negative';
+    } else {
+      sentimentLabel = 'Neutral';
+    }
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sentiment }),
+      headers,
+      body: JSON.stringify({
+        sentiment: sentimentLabel,
+        score: result.score,
+        comparative: result.comparative
+      })
     };
 
   } catch (error) {
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sentiment: "Error",
-        error: error.message,
-      }),
+      headers,
+      body: JSON.stringify({ sentiment: 'Error', error: error.message })
     };
   }
 };
