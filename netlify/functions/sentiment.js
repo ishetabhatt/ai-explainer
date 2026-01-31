@@ -1,4 +1,5 @@
-const Sentiment = require('sentiment');
+// Use ES module import instead of require
+import Sentiment from 'sentiment';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -24,7 +25,16 @@ export default async function handler(req, res) {
     const sentiment = new Sentiment();
     const result = sentiment.analyze(text);
     
-    return res.status(200).json(result);
+    // Return a simplified sentiment label
+    let sentimentLabel = 'neutral';
+    if (result.score > 0) sentimentLabel = 'positive';
+    if (result.score < 0) sentimentLabel = 'negative';
+    
+    return res.status(200).json({ 
+      sentiment: sentimentLabel,
+      score: result.score,
+      details: result
+    });
   } catch (error) {
     console.error('Sentiment error:', error);
     return res.status(500).json({ error: error.message });

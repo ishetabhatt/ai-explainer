@@ -1,8 +1,8 @@
 {
   "name": "ai-explainer",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "page5.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
