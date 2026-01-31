@@ -1,57 +1,59 @@
-const Sentiment = require('sentiment');
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-exports.handler = async (event) => {
-  // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
-  };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { text } = JSON.parse(event.body);
-
+    const { text } = req.body;
+    
     if (!text) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ sentiment: 'Error', error: 'No text provided' })
-      };
+      return res.status(400).json({ error: 'No text provided' });
     }
 
-    // Run sentiment analysis
-    const sentiment = new Sentiment();
-    const result = sentiment.analyze(text);
+    const positiveWords = [
+      'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
+      'love', 'happy', 'joy', 'beautiful', 'perfect', 'best', 'awesome',
+      'brilliant', 'nice', 'pleased', 'delighted', 'excited', 'enjoy',
+      'thank', 'thanks', 'appreciated', 'glad', 'superb', 'outstanding'
+    ];
+    
+    const negativeWords = [
+      'bad', 'terrible', 'awful', 'horrible', 'worst', 'hate', 'sad',
+      'angry', 'upset', 'disappointing', 'disappointed', 'poor', 'useless',
+      'disgusting', 'annoying', 'frustrating', 'frustrated', 'stupid',
+      'waste', 'regret', 'sorry', 'unfortunately', 'problem', 'issue'
+    ];
 
-    // Determine sentiment based on score
-    let sentimentLabel;
-    if (result.score > 0) {
-      sentimentLabel = 'Positive';
-    } else if (result.score < 0) {
-      sentimentLabel = 'Negative';
-    } else {
-      sentimentLabel = 'Neutral';
-    }
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        sentiment: sentimentLabel,
-        score: result.score,
-        comparative: result.comparative
-      })
-    };
-
+    const lowerText = text.toLowerCase();
+    const words = lowerText.match(/\b\w+\b/g) || [];
+    
+    let score = 0;
+    
+    words.forEach(word => {
+      if (positiveWords.includes(word)) score++;
+      if (negativeWords.includes(word)) score--;
+    });
+    
+    let sentimentLabel = 'neutral';
+    if (score > 0) sentimentLabel = 'positive';
+    if (score < 0) sentimentLabel = 'negative';
+    
+    return res.status(200).json({ 
+      sentiment: sentimentLabel,
+      score: score
+    });
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ sentiment: 'Error', error: error.message })
-    };
+    console.error('Sentiment error:', error);
+    return res.status(500).json({ 
+      error: error.message 
+    });
   }
-};
+}
