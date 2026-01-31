@@ -1,6 +1,3 @@
-// Use ES module import instead of require
-import Sentiment from 'sentiment';
-
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,21 +19,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    const sentiment = new Sentiment();
-    const result = sentiment.analyze(text);
+    // Simple sentiment analysis using word lists
+    const positiveWords = [
+      'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
+      'love', 'happy', 'joy', 'beautiful', 'perfect', 'best', 'awesome',
+      'brilliant', 'nice', 'pleased', 'delighted', 'excited', 'enjoy',
+      'thank', 'thanks', 'appreciated', 'glad', 'superb', 'outstanding'
+    ];
     
-    // Return a simplified sentiment label
+    const negativeWords = [
+      'bad', 'terrible', 'awful', 'horrible', 'worst', 'hate', 'sad',
+      'angry', 'upset', 'disappointing', 'disappointed', 'poor', 'useless',
+      'disgusting', 'annoying', 'frustrating', 'frustrated', 'stupid',
+      'waste', 'regret', 'sorry', 'unfortunately', 'problem', 'issue'
+    ];
+
+    const lowerText = text.toLowerCase();
+    const words = lowerText.match(/\b\w+\b/g) || [];
+    
+    let score = 0;
+    
+    words.forEach(word => {
+      if (positiveWords.includes(word)) score++;
+      if (negativeWords.includes(word)) score--;
+    });
+    
     let sentimentLabel = 'neutral';
-    if (result.score > 0) sentimentLabel = 'positive';
-    if (result.score < 0) sentimentLabel = 'negative';
+    if (score > 0) sentimentLabel = 'positive';
+    if (score < 0) sentimentLabel = 'negative';
     
     return res.status(200).json({ 
       sentiment: sentimentLabel,
-      score: result.score,
-      details: result
+      score: score
     });
   } catch (error) {
     console.error('Sentiment error:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: error.message 
+    });
   }
 }

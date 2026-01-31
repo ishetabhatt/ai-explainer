@@ -16,8 +16,5 @@
   "bugs": {
     "url": "https://github.com/ishetabhatt/ai-explainer/issues"
   },
-  "homepage": "https://github.com/ishetabhatt/ai-explainer#readme",
-  "dependencies": {
-    "sentiment": "^5.0.2"
-  }
+  "homepage": "https://github.com/ishetabhatt/ai-explainer#readme"
 }
