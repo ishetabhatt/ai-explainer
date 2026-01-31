@@ -15,7 +15,7 @@ analyzeBtn.addEventListener("click", async () => {
   steps.classList.add("hidden");
 
   try {
-    const response = await fetch("/.netlify/functions/sentiment", {
+    const response = await fetch("/api/sentiment", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
