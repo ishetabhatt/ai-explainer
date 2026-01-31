@@ -1,0 +1,23 @@
+{
+  "name": "ai-explainer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "page5.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishetabhatt/ai-explainer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ishetabhatt/ai-explainer/issues"
+  },
+  "homepage": "https://github.com/ishetabhatt/ai-explainer#readme",
+  "dependencies": {
+    "sentiment": "^5.0.2"
+  }
+}
