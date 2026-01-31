@@ -53,18 +53,21 @@ analyzeBtn.addEventListener("click", async () => {
 
     console.log("API response:", data);
     
-    // Display result with color coding
-    const sentimentEmoji = {
-      positive: '😊',
-      negative: '😞',
-      neutral: '😐'
-    };
+   const sentimentEmoji = {
+  positive: '😊',
+  negative: '😞',
+  neutral: '😐',
+  mixed: '🤔',
+  unclear: '❓'  // Add this
+};
 
-    const sentimentColor = {
-      positive: '#27ae60',
-      negative: '#e74c3c',
-      neutral: '#95a5a6'
-    };
+const sentimentColor = {
+  positive: '#27ae60',
+  negative: '#e74c3c',
+  neutral: '#95a5a6',
+  mixed: '#f39c12',
+  unclear: '#95a5a6'  // Add this
+};
 
     const confidenceText = data.confidence ? ` (${data.confidence} confidence)` : '';
     result.innerHTML = `
@@ -96,22 +99,50 @@ userInput.addEventListener("keypress", (e) => {
   }
 });
 
-// Optional: Character counter
+// Replace the character counter section with this:
 userInput.addEventListener("input", () => {
   const length = userInput.value.length;
-  if (length > 4500) {
-    const remaining = 5000 - length;
+  const maxLength = 5000;
+  
+  // Always show counter if text exists
+  if (length > 0) {
     if (!document.getElementById("charCounter")) {
       const counter = document.createElement("small");
       counter.id = "charCounter";
-      counter.style.color = remaining < 100 ? "#e74c3c" : "#666";
+      counter.style.display = "block";
+      counter.style.marginTop = "5px";
       userInput.parentElement.insertBefore(counter, userInput.nextSibling);
     }
-    document.getElementById("charCounter").textContent = 
-      `${remaining} characters remaining`;
-    document.getElementById("charCounter").style.color = 
-      remaining < 100 ? "#e74c3c" : "#666";
-  } else if (document.getElementById("charCounter")) {
-    document.getElementById("charCounter").remove();
+    
+    const remaining = maxLength - length;
+    const counter = document.getElementById("charCounter");
+    
+    if (remaining < 0) {
+      counter.textContent = `⚠️ Text is ${Math.abs(remaining)} characters too long!`;
+      counter.style.color = "#e74c3c";
+      analyzeBtn.disabled = true;
+      analyzeBtn.style.opacity = "0.5";
+      analyzeBtn.style.cursor = "not-allowed";
+    } else if (remaining < 500) {
+      counter.textContent = `${remaining} characters remaining`;
+      counter.style.color = remaining < 100 ? "#e74c3c" : "#f39c12";
+      analyzeBtn.disabled = false;
+      analyzeBtn.style.opacity = "1";
+      analyzeBtn.style.cursor = "pointer";
+    } else {
+      counter.textContent = `${length} / ${maxLength} characters`;
+      counter.style.color = "#666";
+      analyzeBtn.disabled = false;
+      analyzeBtn.style.opacity = "1";
+      analyzeBtn.style.cursor = "pointer";
+    }
+  } else {
+    // Remove counter if text is empty
+    if (document.getElementById("charCounter")) {
+      document.getElementById("charCounter").remove();
+      analyzeBtn.disabled = false;
+      analyzeBtn.style.opacity = "1";
+      analyzeBtn.style.cursor = "pointer";
+    }
   }
 });
