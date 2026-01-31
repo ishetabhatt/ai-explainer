@@ -1,26 +1,24 @@
 const Sentiment = require('sentiment');
 
-exports.handler = async (event) => {
+module.exports = async (req, res) => {
   // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ sentiment: 'Error', error: 'Method not allowed' });
   }
 
   try {
-    const { text } = JSON.parse(event.body);
+    const { text } = req.body;
 
     if (!text) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ sentiment: 'Error', error: 'No text provided' })
-      };
+      return res.status(400).json({ sentiment: 'Error', error: 'No text provided' });
     }
 
     // Run sentiment analysis
@@ -37,21 +35,14 @@ exports.handler = async (event) => {
       sentimentLabel = 'Neutral';
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        sentiment: sentimentLabel,
-        score: result.score,
-        comparative: result.comparative
-      })
-    };
+    return res.status(200).json({
+      sentiment: sentimentLabel,
+      score: result.score,
+      comparative: result.comparative
+    });
 
   } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ sentiment: 'Error', error: error.message })
-    };
+    console.error('Error:', error);
+    return res.status(500).json({ sentiment: 'Error', error: error.message });
   }
 };
