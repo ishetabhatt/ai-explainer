@@ -74,56 +74,50 @@ export default async function handler(req, res) {
     const lowerText = trimmedText.toLowerCase();
     // Match words, including contractions
     const words = lowerText.match(/\b[\w']+\b/g) || [];
-
-    // Add this after: const words = lowerText.match(/\b[\w']+\b/g) || [];
-
-if (words.length === 0) {
-  return res.status(400).json({ error: 'No valid words found in text' });
-}
-
-// Check if text is mostly gibberish or numbers
-const validWords = words.filter(word => {
-  // Word should have at least one vowel (basic check for real words)
-  return /[aeiou]/i.test(word) && word.length > 1;
-});
-
-const gibberishRatio = validWords.length / words.length;
-
-// If more than 70% of words are gibberish/numbers
-if (gibberishRatio < 0.3 && words.length > 5) {
-  return res.status(200).json({
-    sentiment: 'unclear',
-    score: 0,
-    confidence: 'low',
-    analysis: {
-      wordCount: words.length,
-      positiveWords: 0,
-      negativeWords: 0,
-      detectedWords: [],
-      note: 'Unable to analyze - text appears to be gibberish or contains mostly non-words'
-    }
-  });
-}
-
-// If text is just numbers
-const numberWords = words.filter(word => /^\d+$/.test(word));
-if (numberWords.length === words.length) {
-  return res.status(200).json({
-    sentiment: 'unclear',
-    score: 0,
-    confidence: 'low',
-    analysis: {
-      wordCount: words.length,
-      positiveWords: 0,
-      negativeWords: 0,
-      detectedWords: [],
-      note: 'Unable to analyze - text contains only numbers'
-    }
-  });
-}
     
     if (words.length === 0) {
       return res.status(400).json({ error: 'No valid words found in text' });
+    }
+
+    // Check if text is mostly gibberish or numbers
+    const validWords = words.filter(word => {
+      // Word should have at least one vowel (basic check for real words)
+      return /[aeiou]/i.test(word) && word.length > 1;
+    });
+
+    const gibberishRatio = validWords.length / words.length;
+
+    // If more than 70% of words are gibberish/numbers
+    if (gibberishRatio < 0.3 && words.length > 5) {
+      return res.status(200).json({
+        sentiment: 'unclear',
+        score: 0,
+        confidence: 'low',
+        analysis: {
+          wordCount: words.length,
+          positiveWords: 0,
+          negativeWords: 0,
+          detectedWords: [],
+          note: 'Unable to analyze - text appears to be gibberish or contains mostly non-words'
+        }
+      });
+    }
+
+    // If text is just numbers
+    const numberWords = words.filter(word => /^\d+$/.test(word));
+    if (numberWords.length === words.length) {
+      return res.status(200).json({
+        sentiment: 'unclear',
+        score: 0,
+        confidence: 'low',
+        analysis: {
+          wordCount: words.length,
+          positiveWords: 0,
+          negativeWords: 0,
+          detectedWords: [],
+          note: 'Unable to analyze - text contains only numbers'
+        }
+      });
     }
 
     let score = 0;
@@ -132,86 +126,107 @@ if (numberWords.length === words.length) {
     const detectedWords = [];
 
     // Analyze sentiment with context awareness
-    // Analyze sentiment with context awareness
-for (let i = 0; i < words.length; i++) {
-  const word = words[i];
-  const prevWord = i > 0 ? words[i - 1] : null;
-  const prevPrevWord = i > 1 ? words[i - 2] : null;  // Add this
-  
-  let wordScore = 0;
-  let wordType = null;
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const prevWord = i > 0 ? words[i - 1] : null;
+      const prevPrevWord = i > 1 ? words[i - 2] : null;
+      
+      let wordScore = 0;
+      let wordType = null;
 
-  // Check for positive words
-  if (sentimentWords.positive.strong.includes(word)) {
-    wordScore = 2;
-    wordType = 'positive';
-    positiveCount++;
-  } else if (sentimentWords.positive.moderate.includes(word)) {
-    wordScore = 1;
-    wordType = 'positive';
-    positiveCount++;
-  }
-  // Check for negative words
-  else if (sentimentWords.negative.strong.includes(word)) {
-    wordScore = -2;
-    wordType = 'negative';
-    negativeCount++;
-  } else if (sentimentWords.negative.moderate.includes(word)) {
-    wordScore = -1;
-    wordType = 'negative';
-    negativeCount++;
-  }
+      // Check for positive words
+      if (sentimentWords.positive.strong.includes(word)) {
+        wordScore = 2;
+        wordType = 'positive';
+        positiveCount++;
+      } else if (sentimentWords.positive.moderate.includes(word)) {
+        wordScore = 1;
+        wordType = 'positive';
+        positiveCount++;
+      }
+      // Check for negative words
+      else if (sentimentWords.negative.strong.includes(word)) {
+        wordScore = -2;
+        wordType = 'negative';
+        negativeCount++;
+      } else if (sentimentWords.negative.moderate.includes(word)) {
+        wordScore = -1;
+        wordType = 'negative';
+        negativeCount++;
+      }
 
-  // Apply modifiers if sentiment word found
-  if (wordScore !== 0) {
-    // Check for intensifier before the word
-    if (prevWord && intensifiers.includes(prevWord)) {
-      wordScore = wordScore * 1.5;
+      // Apply modifiers if sentiment word found
+      if (wordScore !== 0) {
+        // Check for intensifier before the word
+        if (prevWord && intensifiers.includes(prevWord)) {
+          wordScore = wordScore * 1.5;
+        }
+
+        // Check for negation (look back 1-2 words)
+        const hasNegation = (prevWord && negations.includes(prevWord)) || 
+                            (prevPrevWord && negations.includes(prevPrevWord));
+        
+        if (hasNegation) {
+          wordScore = wordScore * -0.75;
+          wordType = wordType === 'positive' ? 'negative' : 'positive';
+        }
+
+        // Special case: "could be better" should reduce positive impact
+        if (word === 'better' && prevWord === 'be' && prevPrevWord === 'could') {
+          wordScore = wordScore * 0.3; // Heavily reduce score
+        }
+
+        score += wordScore;
+        detectedWords.push({
+          word: hasNegation 
+                ? `${prevWord || prevPrevWord} ... ${word}` 
+                : (prevWord && intensifiers.includes(prevWord) ? `${prevWord} ${word}` : word),
+          type: wordType,
+          weight: Math.round(wordScore * 100) / 100
+        });
+      }
     }
 
-    // Check for negation (look back 1-2 words)
-    const hasNegation = (prevWord && negations.includes(prevWord)) || 
-                        (prevPrevWord && negations.includes(prevPrevWord));
-    
-    if (hasNegation) {
-      wordScore = wordScore * -0.75;
-      wordType = wordType === 'positive' ? 'negative' : 'positive';
+    // Determine sentiment label with confidence
+    let sentimentLabel = 'neutral';
+    let confidence = 'low';
+    let mixedNote = undefined;
+
+    // Check for mixed sentiment
+    const mixedSentimentThreshold = 0.3;
+    if (positiveCount > 0 && negativeCount > 0) {
+      const totalSentimentWords = positiveCount + negativeCount;
+      const positiveRatio = positiveCount / totalSentimentWords;
+      
+      // If sentiments are balanced (between 30% and 70%)
+      if (positiveRatio >= mixedSentimentThreshold && 
+          positiveRatio <= (1 - mixedSentimentThreshold)) {
+        sentimentLabel = 'mixed';
+        confidence = 'medium';
+        mixedNote = 'This text contains both positive and negative sentiments';
+      }
     }
 
-    // Special case: "could be better" should reduce positive impact
-    if (word === 'better' && prevWord === 'be' && prevPrevWord === 'could') {
-      wordScore = wordScore * 0.3; // Heavily reduce score
+    // Only determine positive/negative if not mixed
+    if (sentimentLabel !== 'mixed') {
+      const normalizedScore = score / words.length; // Normalize by text length
+
+      if (score > 0) {
+        sentimentLabel = 'positive';
+        if (normalizedScore > 0.1) confidence = 'high';
+        else if (normalizedScore > 0.05) confidence = 'medium';
+      } else if (score < 0) {
+        sentimentLabel = 'negative';
+        if (normalizedScore < -0.1) confidence = 'high';
+        else if (normalizedScore < -0.05) confidence = 'medium';
+      } else {
+        confidence = 'medium';
+      }
     }
 
-    score += wordScore;
-    detectedWords.push({
-      word: hasNegation 
-            ? `${prevWord || prevPrevWord} ... ${word}` 
-            : (prevWord && intensifiers.includes(prevWord) ? `${prevWord} ${word}` : word),
-      type: wordType,
-      weight: wordScore
-    });
-  }
-}
-
-    // Add after the sentiment calculation loop, before determining sentiment label
-
-// Check for mixed sentiment
-const mixedSentimentThreshold = 0.3; // If ratio is close to even
-if (positiveCount > 0 && negativeCount > 0) {
-  const totalSentimentWords = positiveCount + negativeCount;
-  const positiveRatio = positiveCount / totalSentimentWords;
-  const negativeRatio = negativeCount / totalSentimentWords;
-  
-  // If sentiments are balanced (between 30% and 70%)
-  if (positiveRatio >= mixedSentimentThreshold && 
-      positiveRatio <= (1 - mixedSentimentThreshold)) {
-    // Force neutral for mixed sentiment
-    sentimentLabel = 'mixed';
-    confidence = 'medium';
-    
+    // Return comprehensive results
     return res.status(200).json({ 
-      sentiment: 'mixed',
+      sentiment: sentimentLabel,
       score: Math.round(score * 100) / 100,
       confidence: confidence,
       analysis: {
@@ -219,40 +234,7 @@ if (positiveCount > 0 && negativeCount > 0) {
         positiveWords: positiveCount,
         negativeWords: negativeCount,
         detectedWords: detectedWords.slice(0, 10),
-        note: 'This text contains both positive and negative sentiments'
-      }
-    });
-  }
-}
-
-    // Determine sentiment label with confidence
-    let sentimentLabel = 'neutral';
-    let confidence = 'low';
-    
-    const normalizedScore = score / words.length; // Normalize by text length
-
-    if (score > 0) {
-      sentimentLabel = 'positive';
-      if (normalizedScore > 0.1) confidence = 'high';
-      else if (normalizedScore > 0.05) confidence = 'medium';
-    } else if (score < 0) {
-      sentimentLabel = 'negative';
-      if (normalizedScore < -0.1) confidence = 'high';
-      else if (normalizedScore < -0.05) confidence = 'medium';
-    } else {
-      confidence = 'medium';
-    }
-
-    // Return comprehensive results
-    return res.status(200).json({ 
-      sentiment: sentimentLabel,
-      score: Math.round(score * 100) / 100, // Round to 2 decimal places
-      confidence: confidence,
-      analysis: {
-        wordCount: words.length,
-        positiveWords: positiveCount,
-        negativeWords: negativeCount,
-        detectedWords: detectedWords.slice(0, 10) // Limit to top 10 for response size
+        note: mixedNote
       }
     });
   } catch (error) {
