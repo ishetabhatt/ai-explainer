@@ -87,8 +87,8 @@ export default async function handler(req, res) {
 
     const gibberishRatio = validWords.length / words.length;
 
-    // If more than 70% of words are gibberish/numbers
-    if (gibberishRatio < 0.3 && words.length > 5) {
+    // If more than 50% of words are gibberish/numbers (more lenient threshold)
+    if (gibberishRatio < 0.5) {
       return res.status(200).json({
         sentiment: 'unclear',
         score: 0,
@@ -193,14 +193,18 @@ export default async function handler(req, res) {
     let mixedNote = undefined;
 
     // Check for mixed sentiment
-    const mixedSentimentThreshold = 0.3;
+    const mixedSentimentThreshold = 0.35; // Stricter threshold (35% to 65%)
     if (positiveCount > 0 && negativeCount > 0) {
       const totalSentimentWords = positiveCount + negativeCount;
       const positiveRatio = positiveCount / totalSentimentWords;
       
-      // If sentiments are balanced (between 30% and 70%)
+      // Only mark as mixed if:
+      // 1. Sentiments are balanced (between 35% and 65%)
+      // 2. There are at least 2 words of each sentiment
       if (positiveRatio >= mixedSentimentThreshold && 
-          positiveRatio <= (1 - mixedSentimentThreshold)) {
+          positiveRatio <= (1 - mixedSentimentThreshold) &&
+          positiveCount >= 2 && 
+          negativeCount >= 2) {
         sentimentLabel = 'mixed';
         confidence = 'medium';
         mixedNote = 'This text contains both positive and negative sentiments';
